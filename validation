@@ -1,0 +1,63 @@
+#!/bin/bash
+
+function meta(){
+line=$(head -n 1 $tbl_name.csv)
+names+=$(echo $line | awk -F ',' '{for(i=1;i<=NF;i++) print $i}' | awk -F: '{print $1}' ORS=',')
+types+=$(echo $line | awk -F ',' '{for(i=1;i<=NF;i++) print $i}' | awk -F: '{print $2}' ORS=',')
+IFS=',' read -ra nameval <<< "$names"
+IFS=',' read -ra typesval <<< "$types"
+}
+
+### primary key check ###
+function pk_check(){
+read -p "does the table have a primary key(y/n): " ans
+if [[ $ans = y ]];then
+	if ! cut -d "," -f 1 $tbl_name.csv| grep -wq "${input[0]}" ; then
+		echo "PK is unique"
+		return 0
+	else echo "Error pk is a dublicate"
+	return 1
+	fi
+fi
+}
+
+### data check ###
+
+function data_check(){
+meta
+echo $line
+data=""
+read -p "enter the values as comma separated values: " data
+IFS=',' read -ra input <<< "$data"
+for i in "${!typesval[@]}"
+do	
+case "${typesval[$i]}" in
+	"integer") 
+	        echo "int check" ,"${typesval[$i]}"
+		if ! [[ "${input[$i]}" =~ ^[0-9]+$ ]];then
+				echo "Error: input should be a integer"
+				return 1
+		fi 
+			   ;;
+	"boolean") 
+		if [[ "${input[$i]}" != "true" && "${input[$i]}" != "false" ]];then
+				echo "Error: input should be boolean"
+				return 1
+		    fi 
+			   ;;
+	* ) if [[ -z "${input[$i]}" ]];then
+			echo "${input[$i]}"
+				echo "Error: input is empty "
+				return 1			
+	    fi
+		   ;;
+esac
+done
+echo "success"
+names=""
+types=""
+nameval=""
+typesval=""
+return 0
+}
+

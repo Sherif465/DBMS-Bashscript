@@ -1,0 +1,230 @@
+#!/bin/bash
+
+source ./validation
+
+menu2=("Create Table" "List Tables" "Drop Table" "Insert into table" "select from Table" "Delete From Table" "Update Table" "Main Menu")
+
+### asking users if they need the second menu ###
+
+function askmenu(){
+read -p "if u want to modify the table press (y): " answer
+if [[ "$answer" = "y" ]];then
+	second_menu
+fi
+}
+
+### Create Table ###
+
+function create_tbl(){
+pwd
+read -p "enter Table name: " tbl_name
+if [[ -f "./$tbl_name.csv" ]]; then 
+	echo "$tbl_name already exist"
+	return
+fi
+touch "./$tbl_name.csv" 
+echo "Table $tbl_name created successfully"
+echo "the first value will be the primary key"
+read -p "Enter Column names and datatype separated by ':' (press 'q' to quit) " columns
+check=true
+while [[ "$columns" != "q" ]]
+do
+	if [[ $check = "true" ]]; then
+		output="$columns"
+		check=false
+	else 
+		output="$output,$columns"
+	fi
+	read -p "Enter Column names and datatype separated by ':' (press 'q' to quit) " columns
+done
+echo "$output" > "./$tbl_name.csv" 
+echo "Table created "
+}
+
+### List Tables ###
+
+function list_tbls(){
+ls -A *.csv
+}
+
+### Drop Table ###
+function drop_tbl(){
+list_tbls
+read -p "enter table name: " tbl_name
+if [[ -f $tbl_name.csv ]]; then
+	echo "$tbl_name.csv got deleted"
+	rm -r $tbl_name.csv
+else echo "$tbl_name.csv doesn't exist"
+fi
+}
+
+### insert into table ###
+function insert_tbl(){
+read -p "enter table name: " tbl_name
+if [[ -f $tbl_name.csv ]]; then
+	data_check
+	if [[ $? -eq 0 ]];then
+		pk_check
+		if [[ $? -eq 0 ]];then
+		echo "$data" >> "./$tbl_name.csv"
+		echo "Data inserted successfully"
+		fi
+	else echo "Failed to insert data"
+	fi
+else echo "table $tbl_name doesn't exist"
+fi
+}
+
+
+### Second Menu ###
+function second_menu(){
+select choice in "${menu2[@]}"
+do
+case "$choice" in
+"Create Table") create_tbl 
+second_menu
+break;;
+"List Tables") list_tbls 
+askmenu
+break;;
+"Drop Table") drop_tbl
+askmenu
+break;;
+"Insert into table") list_tbls
+insert_tbl 
+askmenu
+break;;
+"select from Table") sel_tbl
+askmenu
+break;;
+"Delete From Table") del_tbl
+askmenu
+break;;
+"Update Table") list_tbls 
+update_tbl
+askmenu
+break;;
+"Main Menu")cd ../..
+Main_menu 
+break;;
+*) echo "$choice is not one of the choices"
+  ;;
+esac
+done
+}
+
+### Select from table ###
+
+function sel_tbl(){
+read -p "enter Table name: " tbl_name
+if ! [[ -f "./$tbl_name.csv" ]]; then 
+	echo "$tbl_name doesn't exist"
+	return
+fi
+PS3="select option: "
+select option in "word" "Lines" "All table";
+do
+case "$option" in	
+"word" ) read -p "enter the value of $option : " select
+(head -n 1 ./$tbl_name.csv;grep -wni "$select" ./$tbl_name.csv) | awk 'BEGIN { FS=","; printf("+"); for(i=0;i<10;i++) printf("-"); printf("+"); for(i=0;i<36;i++) printf("-"); printf("+"); for(i=0;i<25;i++) printf("-"); printf("+\n"); } { printf("| %-20s | %-20s | %-25s |\n", $1, $2, $3); } END { printf("+"); for(i=0;i<20;i++) printf("-"); printf("+"); for(i=0;i<26;i++) printf("-"); printf("+"); for(i=0;i<25;i++) printf("-"); printf("+\n"); }'
+break
+;;
+"Lines" ) echo "(if u want to display multiple lines enter the line numbers separated by ",")"
+read -p "enter the value of $option : " select
+(head -n 1 ./$tbl_name.csv;sed -n ""$select"p" ./$tbl_name.csv) | awk 'BEGIN { FS=","; printf("+"); for(i=0;i<10;i++) printf("-"); printf("+"); for(i=0;i<36;i++) printf("-"); printf("+"); for(i=0;i<25;i++) printf("-"); printf("+\n"); } { printf("| %-20s | %-20s | %-25s |\n", $1, $2, $3); } END { printf("+"); for(i=0;i<20;i++) printf("-"); printf("+"); for(i=0;i<26;i++) printf("-"); printf("+"); for(i=0;i<25;i++) printf("-"); printf("+\n"); }' 
+break ;;
+"All table" ) awk 'BEGIN { FS=","; printf("+"); for(i=0;i<10;i++) printf("-"); printf("+"); for(i=0;i<36;i++) printf("-"); printf("+"); for(i=0;i<25;i++) printf("-"); printf("+\n"); } { printf("| %-20s | %-20s | %-25s |\n", $1, $2, $3); } END { printf("+"); for(i=0;i<20;i++) printf("-"); printf("+"); for(i=0;i<26;i++) printf("-"); printf("+"); for(i=0;i<25;i++) printf("-"); printf("+\n"); }' ./$tbl_name.csv
+break ;;
+*) echo "$option is not one of the choices"	
+;;
+esac
+done
+}
+
+function del_tbl(){
+read -p "enter Table name: " tbl_name
+if ! [[ -f "./$tbl_name.csv" ]]; then 
+	echo "$tbl_name doesn't exist"
+	return
+fi
+PS3="select option: "
+select option in "word" "Lines" "All table";
+do
+case "$option" in	
+"word" ) read -p "enter the value of $option in the line you want to delete : " select
+sed -i "/$select/d" ./$tbl_name.csv
+break
+;;
+"Lines" ) echo "(if u want to delete multiple lines enter the line numbers separated by ",")"
+read -p "enter the value of $option : " select
+sed -i ""$select"d" ./$tbl_name.csv
+break ;;
+"All table" ) sed -i '2,$d' ./$tbl_name.csv
+break ;;
+*) echo "$option is not one of the choices"	
+;;
+esac
+done
+}
+
+
+function update_tbl(){
+read -p "enter Table name: " tbl_name
+if ! [[ -f "./$tbl_name.csv" ]]; then 
+	echo "$tbl_name doesn't exist"
+	return
+fi
+read -p "enter field name: " field
+read -p "enter old value: " old_val
+read -p "enter new value: " new_val
+meta
+if ! head -n 1 "./$tbl_name.csv" | grep -q "$field:"; then
+        echo "Error: field $field not found in CSV file"
+        return 1
+fi
+for i in "${!nameval[@]}"; do
+    if [[ ${nameval[$i]} =~ $field ]]; then
+        pk_check=$i
+    fi
+done
+var=$(cut -d "," -f "$((pk_check+1))" ./$tbl_name.csv | head -n 1 | awk -F: '{print $1}')
+echo "$var" , "${nameval[0]}"
+if [[ "$var" =~ "${nameval[0]}" ]]; then
+     read -p "does the table have a primary key(y/n): " ans
+     if [[ $ans = y ]];then
+	if ! cut -d "," -f 1 ./$tbl_name.csv| grep -qw "$new_val" ; then
+		echo "PK is unique"
+		if grep -qw "$old_val" ./$tbl_name.csv; then  
+    			if [[ "$old_val" =~ ^[0-9]+$ && ! "$new_val" =~ ^[0-9]+$ ]]; then
+      				  echo "Error: new value for field ${field} is not an integer"
+      				  return 1
+  			elif [[ "$old_val" == "true" || "$old_val" == "false" ]] && [[ "$new_val" != "true" && "$new_val" != "false" ]]; then
+      				  echo "Error: new value for field ${field} is not a boolean"
+       				 return 1
+   			else
+    				sed -i "s/\<$old_val\>/$new_val/g" ./$tbl_name.csv
+   				echo "Substitution successful"
+   				return 0
+   			 fi
+		else echo "No exact match found"
+		fi
+			return 1
+	else echo "Error pk is a dublicate"
+		return 1
+	fi
+     fi
+fi
+if grep -qw "$old_val" ./$tbl_name.csv; then  
+    if [[ "$old_val" =~ ^[0-9]+$ && ! "$new_val" =~ ^[0-9]+$ ]]; then
+        echo "Error: new value for field ${field} is not an integer"
+        return 1
+    elif [[ "$old_val" == "true" || "$old_val" == "false" ]] && [[ "$new_val" != "true" && "$new_val" != "false" ]]; then
+        echo "Error: new value for field ${field} is not a boolean"
+        return 1
+    else
+    	sed -i "s/\<$old_val\>/$new_val/g" ./$tbl_name.csv
+   	echo "Substitution successful"
+    fi
+else echo "No exact match found"
+fi
+}

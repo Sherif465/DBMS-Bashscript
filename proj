@@ -1,0 +1,90 @@
+#!/bin/bash
+source ./secondmenu
+source ./validation
+#### Creating a menu to select from ###
+
+menu=("Create Database" "List Databases" "Connect To Databases" "Drop Databse" "Exit")
+
+### creating Database
+
+function create_db(){
+read -p "enter Database name:" dbname
+if [[ "$dbname" =~ ^[[:alpha:]] ]];then
+	if [[ -d "databases/$dbname" ]]; then 
+	echo "$dbname already exist"
+	cd "databases/$dbname"
+        else
+	mkdir -p "databases/$dbname"
+	touch "databases/$dbname/tables.txt"
+	echo "Database $dbname created successfully"
+        fi
+else echo "enter a valid name format"
+fi
+}
+
+### listing Database
+
+function list_db(){
+if [ "$(ls -A ./databases)" ]; then 
+	echo "list of data base : " 
+	echo "$(ls -A ./databases)"
+else 
+	echo "Database isn't found"
+fi
+}
+
+### Connecting to DB ###
+
+function connect_db(){
+list_db
+read -p "Enter Database name: " dbname
+if [[ -d "databases/$dbname" ]]; then
+	current_db=$dbname
+	echo "connected to: $dbname"
+	cd "./databases/$dbname/" 
+	#PS2="$dbname >>>"
+	second_menu
+else 
+echo "$dbname doesn't exist"
+connect_db
+fi
+}
+
+### dropping Database ###
+
+function drop_dp(){
+list_db
+read -p "Enter Database name to delete: " dbname
+if [[ -d "databases/$dbname" ]]; then
+	rm -r "databases/$dbname"
+	echo "$dbname got deleted"
+else echo "$dbname doesn't exist"
+fi
+}
+
+### Main Menu function for selection ###
+
+function Main_menu(){
+echo "Main Menu:"
+PS3="enter option number:"
+select var in "${menu[@]}"
+do
+case "$var" in
+"Create Database") create_db 
+Main_menu;;
+"List Databases") list_db 
+Main_menu;;
+"Connect To Databases") connect_db
+ break;;
+"Drop Databse") drop_dp 
+Main_menu
+;;
+"Exit") exit 
+break;;
+*) echo "$var is not one of the choices"
+  ;;
+esac
+done
+}
+Main_menu
+
